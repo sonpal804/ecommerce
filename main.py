@@ -8,11 +8,12 @@ app = Flask(__name__)
 def getConnection():
     try:
         conn = mysql.connector.connect(
-            host="mysql-server-test.mysql.database.azure.com",
-            user="sonpal",
-            password="Sonpal@12345",
+            host="localhost",
+            user="root",
+            password="root",
             port=3306,
-            database="orders")
+            database="test",
+            ssl_disabled=True)
         print("Connection established")
         return conn
     except mysql.connector.Error as err:
@@ -54,8 +55,8 @@ def insertedRecords():
 
 @app.route("/savedRecords")
 def insertedRecords():
-    savedRecordsCount = savedRecordsCount()
-    return "items saved " + savedRecordsCount
+    savedRecordsCount = insertedRecords()
+    return "items saved " + str(savedRecordsCount)
 
 
 @app.route("/fetchAllRecords")
