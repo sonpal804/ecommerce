@@ -1,71 +1,47 @@
-from flask import Flask
-import mysql.connector
-from mysql.connector import errorcode
+from flask import Flask 
+from flask_mysqldb import MySQL
 
 app = Flask(__name__)
 
 
-def getConnection():
-    try:
-        conn = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="root",
-            port=3306,
-            database="test",
-            ssl_disabled=True)
-        print("Connection established")
-        return conn
-    except mysql.connector.Error as err:
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Something is wrong with the user name or password")
-        elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
-        else:
-            print(err)
-        raise RuntimeError("MySQL connection not working")
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = 'root'
+app.config['MYSQL_DB'] = 'test'
 
-
-def insertedRecords():
-    conn = getConnection()
-    cursor = conn.cursor()
-
-    # Drop previous table of same name if one exists
-    cursor.execute("DROP TABLE IF EXISTS ITEMS;")
-    print("Finished dropping table (if existed).")
-
-    # Created table
-    cursor.execute(
-        "CREATE TABLE ITEMS (id serial PRIMARY KEY, name VARCHAR(50), quantity INTEGER);"
-    )
-    print("Finished creating table.")
-
-    # Inserted data into table
-    cursor.execute(
-        "INSERT INTO ITEMS (name, quantity) VALUES (%s, %s);", ("banana", 150)
-    )
-    print("Inserted", cursor.rowcount, "row(s) of data.")
-    cursor.execute(
-        "INSERT INTO ITEMS (name, quantity) VALUES (%s, %s);", ("orange", 154)
-    )
-    print("Inserted", cursor.rowcount, "row(s) of data.")
-
-    return cursor.rowcount
+mysql = MySQL(app)
 
 
 @app.route("/savedRecords")
 def insertedRecords():
-    savedRecordsCount = insertedRecords()
-    return "items saved " + str(savedRecordsCount)
+    conn = mysql.connection
+    cursor = conn.cursor()
+
+    # Drop previous table of same name if one exists
+    cursor.execute("DROP TABLE IF EXISTS items;")
+    print("Finished dropping table (if existed).")
+
+    # Created table
+    cursor.execute("CREATE TABLE items (id serial PRIMARY KEY, name VARCHAR(50), quantity INTEGER);")
+    print("Finished creating table.")
+
+    # Inserted data into table
+    cursor.execute("INSERT INTO items (name, quantity) VALUES (%s, %s);", ("banana", 60))
+    cursor.execute("INSERT INTO items (name, quantity) VALUES (%s, %s);", ("apple", 160))
+    cursor.execute("INSERT INTO items (name, quantity) VALUES (%s, %s);", ("mango", 120))
+    conn.commit()
+    #savedRecordsCount = cursor.rowcount
+    return "items saved "
+
 
 
 @app.route("/fetchAllRecords")
 def fetchAllRecords():
-    conn = getConnection()
+    conn = mysql.connection
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM ITEMS")
-    return cursor.fetchall()
+    cursor.execute("SELECT * FROM items")
+    return str(cursor.fetchall())
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+   app.run(host="localhost", port=8080)
